@@ -2,16 +2,14 @@ name: Android CI
 
 on:
   push:
-    branches: ['**']
-    tags: ['v*']
-  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: android-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: android-${{ github.workflow }}
   cancel-in-progress: true
 
 defaults:
@@ -143,8 +141,6 @@ jobs:
         include:
           - flavor: other
             task: Other
-          - flavor: otherLegacy
-            task: OtherLegacy
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:

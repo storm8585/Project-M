@@ -8,9 +8,12 @@ https://sing-box.sagernet.org/installation/clients/sfa/
 
 ## Android CI
 
-Every branch push and pull request builds the modern and legacy Android variants,
-with generated app versions, native-library caching, lint checks and downloadable
-APK artifacts. Release signing is optional and restricted to the default branch.
+Pushes to `main` build only the modern Android variant for ARMv7, with generated
+app versions, native-library caching, lint checks and a downloadable APK.
+Pull requests, tag pushes and bot branch pushes do not trigger this build.
+Manual runs remain available, and only one Android CI run is kept active.
+Other ABIs remain configurable; the legacy APK job is disabled.
+Release signing is optional and restricted to the default branch.
 
 See [CI setup and versioning (Türkçe)](docs/CI.md) for signing secrets, versioning
 rules, download instructions and the project/UI analysis.
