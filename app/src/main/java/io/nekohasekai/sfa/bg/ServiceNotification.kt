@@ -51,7 +51,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
 
     private val notificationBuilder by lazy {
         NotificationCompat.Builder(service, notificationChannel).setShowWhen(false).setOngoing(true)
-            .setContentTitle("sing-box").setOnlyAlertOnce(true)
+            .setContentTitle(service.getString(R.string.app_name)).setOnlyAlertOnce(true)
             .setSmallIcon(R.drawable.ic_menu)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setContentIntent(
@@ -94,7 +94,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
         service.startForeground(
             notificationId,
             notificationBuilder
-                .setContentTitle(lastProfileName.takeIf { it.isNotBlank() } ?: "sing-box")
+                .setContentTitle(lastProfileName.takeIf { it.isNotBlank() } ?: service.getString(R.string.app_name))
                 .setContentText(service.getString(contentTextId)).build(),
         )
     }
@@ -121,7 +121,7 @@ class ServiceNotification(private val status: MutableLiveData<Status>, private v
 
     override fun updateStatus(status: StatusMessage) {
         val content =
-            Libbox.formatBytes(status.uplink) + "/s ↑\t" + Libbox.formatBytes(status.downlink) + "/s ↓"
+            Libbox.formatBytes(status.uplink) + "/s \u2191\t" + Libbox.formatBytes(status.downlink) + "/s \u2193"
         Application.notificationManager.notify(
             notificationId,
             notificationBuilder.setContentText(content).build(),

@@ -150,7 +150,7 @@ class PackageTests(TempTests):
         self.apk_dir = (self.root / "app/build/outputs/apk" / self.env["BUILD_FLAVOR"]
                         / self.env["BUILD_TYPE"].lower())
         self.apk_dir.mkdir(parents=True, exist_ok=True)
-        self.metadata: dict[str, Any] = {"applicationId": "io.nekohasekai.sfa", "elements": []}
+        self.metadata: dict[str, Any] = {"applicationId": "com.modex.vpn", "elements": []}
         for abi in abis:
             name = f"app-{abi}.apk"
             (self.apk_dir / name).write_bytes(abi.encode())
@@ -191,7 +191,7 @@ class PackageTests(TempTests):
                 self.assertEqual((dist / "SHA256SUMS").read_text(), "".join(sums))
                 self.assertEqual(json.loads((dist / "build-metadata.json").read_text()), {
                     "version_name": "1.2.3-ci.42", "version_code": 1000042,
-                    "application_id": "io.nekohasekai.sfa", "flavor": flavor, "build_type": build_type,
+                    "application_id": "com.modex.vpn", "flavor": flavor, "build_type": build_type,
                     "app_commit": "a" * 40, "core_commit": "b" * 40, "go_version": "go1.26.8",
                     "run_id": "42", "run_attempt": "2", "apks": artifacts,
                     "build_url": "https://github.com/example/sfa/actions/runs/42",

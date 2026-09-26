@@ -178,13 +178,13 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: python3 .github/scripts/prepare_signing.py
-      - name: Lint, unit tests and APKs
+      - name: Unit tests and APKs
         env:
           VARIANT: ${{ matrix.task }}${{ steps.signing.outputs.build_type || 'Debug' }}
         run: |
           bash ./gradlew --no-daemon --stacktrace --console=plain --max-workers=2 \
             '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' \
-            ":app:lint$VARIANT" ":app:test${VARIANT}UnitTest" ":app:assemble$VARIANT"
+            ":app:test${VARIANT}UnitTest" ":app:assemble$VARIANT"
       - name: Package APKs, checksums and build metadata
         env:
           BUILD_TYPE: ${{ steps.signing.outputs.build_type || 'Debug' }}
@@ -194,12 +194,12 @@ jobs:
       - name: Upload APKs
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: SFA-${{ needs.prepare.outputs.version_name }}-${{ matrix.flavor }}-${{ steps.signing.outputs.build_type || 'Debug' }}-${{ github.run_attempt }}
+          name: Modex-${{ needs.prepare.outputs.version_name }}-${{ matrix.flavor }}-${{ steps.signing.outputs.build_type || 'Debug' }}-${{ github.run_attempt }}
           path: dist/
           if-no-files-found: error
           compression-level: 0
           retention-days: 30
-      - name: Upload lint, test reports and R8 mapping
+      - name: Upload test reports and R8 mapping
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

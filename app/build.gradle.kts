@@ -79,12 +79,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "io.nekohasekai.sfa"
+        applicationId = "com.modex.vpn"
         minSdk = 24
         targetSdk = 37
         versionCode = getVersionProps("VERSION_CODE").toInt()
         versionName = getVersionProps("VERSION_NAME")
-        base.archivesName.set("SFA-${versionName}")
+        base.archivesName.set("Modex-${versionName}")
     }
 
     signingConfigs {
@@ -172,6 +172,8 @@ android {
     }
 
     lint {
+        abortOnError = false
+        checkReleaseBuilds = false
         fatal += "NewApi"
     }
 

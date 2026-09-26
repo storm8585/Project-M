@@ -20,7 +20,7 @@ def collect(root, env):
                  if "=" in line and not line.startswith("#"))
     apk_dir = root / "app/build/outputs/apk" / flavor / build_type.lower()
     metadata = json.loads((apk_dir / "output-metadata.json").read_text())
-    if metadata["applicationId"] != "io.nekohasekai.sfa":
+    if metadata["applicationId"] != "com.modex.vpn":
         raise ValueError("Unexpected application ID")
     apks, seen = [], set()
     for element in metadata["elements"]:
@@ -68,7 +68,7 @@ def collect(root, env):
     }, indent=2) + "\n", encoding="utf-8")
     with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
         summary.write(f"\n### {flavor} / {build_type}\n\n"
-                      f"{len(apks)} signed APKs verified; download the matching SFA artifact. "
+                      f"{len(apks)} signed APKs verified; download the matching Modex artifact. "
                       f"Included ABIs: {', '.join(sorted(expected_abis))}.\n")
 
 

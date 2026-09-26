@@ -22,7 +22,7 @@ object UserResolver {
         "root" -> ResolvedUser("root", Process.ROOT_UID, Process.ROOT_UID, "/")
         "shell" -> ResolvedUser("shell", Process.SHELL_UID, Process.SHELL_UID, "/data/local")
         "termux" -> resolvePackage(pm, TERMUX_PACKAGE)
-        "sing-box" -> resolvePackage(pm, BuildConfig.APPLICATION_ID)
+        "sing-box", "modex" -> resolvePackage(pm, BuildConfig.APPLICATION_ID)
         else -> resolvePackage(pm, username)
     }
 
