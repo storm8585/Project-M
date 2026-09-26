@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -21,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,27 +35,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.nekohasekai.sfa.R
+import io.nekohasekai.sfa.compose.base.UiEvent
 import io.nekohasekai.sfa.compose.component.RemoteControlMenuItems
 import io.nekohasekai.sfa.compose.component.rememberRemoteServers
 import io.nekohasekai.sfa.compose.navigation.NewProfileArgs
+import io.nekohasekai.sfa.compose.navigation.Screen
 import io.nekohasekai.sfa.compose.topbar.LocalScaffoldPadding
 import io.nekohasekai.sfa.compose.topbar.OverrideTopBar
 import io.nekohasekai.sfa.constant.Status
 import io.nekohasekai.sfa.utils.RemoteControlManager
 import kotlinx.coroutines.launch
 
-data class CardRenderItem(val cards: List<CardGroup>, val isRow: Boolean)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    serviceStatus: Status = Status.Stopped,
-    showStartFab: Boolean = false,
-    showStatusBar: Boolean = false,
-    onOpenNewProfile: (NewProfileArgs) -> Unit = {},
+    serviceStatus: Status,
+    showStartFab: Boolean,
+    showStatusBar: Boolean,
+    onOpenNewProfile: (NewProfileArgs) -> Unit,
     viewModel: DashboardViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -65,8 +68,26 @@ fun DashboardScreen(
 
     OverrideTopBar {
         TopAppBar(
-            title = { Text(stringResource(R.string.title_dashboard)) },
+            title = {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground,
+            ),
             actions = {
+                // Direct access to Settings
+                IconButton(onClick = { viewModel.sendGlobalEvent(UiEvent.Navigate(Screen.Settings.route)) }) {
+                    Icon(
+                        imageVector = Icons.Outlined.Settings,
+                        contentDescription = stringResource(R.string.title_settings),
+                    )
+                }
+
                 Box {
                     IconButton(onClick = { showOthersMenu = true }) {
                         Icon(
@@ -112,9 +133,8 @@ fun DashboardScreen(
             sheetState = sheetState,
             visibleCards = uiState.visibleCards,
             cardOrder = uiState.cardOrder,
-            onToggleCard = viewModel::toggleCardVisibility,
-            onReorderCards = viewModel::reorderCards,
-            onResetOrder = viewModel::resetCardOrder,
+            onCardToggle = viewModel::toggleCardVisibility,
+            onCardsReorder = viewModel::reorderCards,
             onDismiss = {
                 scope.launch {
                     sheetState.hide()
@@ -153,6 +173,18 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = bottomPadding),
         ) {
+            // Modern Flat Hero VPN Connect Card
+            item {
+                VpnHeroCard(
+                    status = serviceStatus,
+                    startTime = uiState.serviceStartTime,
+                    hasProfile = uiState.selectedProfileId != -1L,
+                    selectedProfileName = uiState.selectedProfileName,
+                    onToggle = { viewModel.toggleService() },
+                    onSelectProfile = { viewModel.showProfilePickerSheet() },
+                )
+            }
+
             // Dynamic dashboard cards
             // Show cards when service is running OR if it's the Profiles card (always available)
             val serviceRunning = uiState.isStatusVisible

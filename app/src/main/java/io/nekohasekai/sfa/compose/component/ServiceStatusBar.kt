@@ -21,7 +21,11 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.Cable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
+import io.nekohasekai.sfa.compose.theme.ServiceRunning
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,8 +64,9 @@ fun ServiceStatusBar(
     ) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 3.dp,
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 0.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         ) {
             Row(
                 modifier =
@@ -165,13 +170,24 @@ fun ServiceStatusBar(
 
 @Composable
 private fun StatusItem(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Medium,
-        color = MaterialTheme.colorScheme.onSurface,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
-    )
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(ServiceRunning),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
 }
 
 @Composable

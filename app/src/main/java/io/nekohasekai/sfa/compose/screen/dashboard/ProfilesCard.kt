@@ -33,7 +33,9 @@ import androidx.compose.material.icons.outlined.CreateNewFolder
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -217,6 +219,12 @@ fun ProfilesCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(
             modifier = Modifier
@@ -248,15 +256,8 @@ fun ProfilesCard(
                 Surface(
                     onClick = onShowAddProfileSheet,
                     shape = RoundedCornerShape(12.dp),
-                    color = if (isSystemInDarkTheme()) {
-                        lerp(
-                            MaterialTheme.colorScheme.surfaceContainerHighest,
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            0.5f,
-                        )
-                    } else {
-                        MaterialTheme.colorScheme.surfaceDim
-                    },
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                     modifier = Modifier.size(44.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center) {

@@ -88,23 +88,22 @@ data class DashboardUiState(
     // Card visibility settings
     val visibleCards: Set<CardGroup> =
         setOf(
-            CardGroup.ClashMode,
+            CardGroup.Profiles,
             CardGroup.UploadTraffic,
             CardGroup.DownloadTraffic,
-            CardGroup.Debug,
+            CardGroup.ClashMode,
             CardGroup.Connections,
             CardGroup.SystemProxy,
-            CardGroup.Profiles,
         ),
     val cardOrder: List<CardGroup> =
         listOf(
+            CardGroup.Profiles,
             CardGroup.UploadTraffic,
             CardGroup.DownloadTraffic,
-            CardGroup.Debug,
+            CardGroup.ClashMode,
             CardGroup.Connections,
             CardGroup.SystemProxy,
-            CardGroup.ClashMode,
-            CardGroup.Profiles,
+            CardGroup.Debug,
         ),
     val showCardSettingsDialog: Boolean = false,
 ) {

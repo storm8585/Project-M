@@ -1,6 +1,6 @@
 package io.nekohasekai.sfa.compose.screen.dashboard
 
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,15 +34,8 @@ fun ProfileSelectorButton(selectedProfile: Profile?, onClick: () -> Unit, modifi
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(48.dp),
         shape = RoundedCornerShape(12.dp),
-        color = if (isSystemInDarkTheme()) {
-            lerp(
-                MaterialTheme.colorScheme.surfaceContainerHighest,
-                MaterialTheme.colorScheme.surfaceContainerHigh,
-                0.5f,
-            )
-        } else {
-            MaterialTheme.colorScheme.surfaceDim
-        },
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Row(
             modifier = Modifier
@@ -60,7 +52,7 @@ fun ProfileSelectorButton(selectedProfile: Profile?, onClick: () -> Unit, modifi
                     imageVector = profileIcon,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))

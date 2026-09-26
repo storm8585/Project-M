@@ -49,6 +49,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -1220,8 +1222,10 @@ class MainActivity :
                         ) {
                             FloatingActionButton(
                                 onClick = { startService() },
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = Color.White,
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PlayArrow,
@@ -1315,7 +1319,10 @@ class MainActivity :
                     bottomBar = {
                         if (!isSubScreen) {
                             val hasUpdate by UpdateState.hasUpdate
-                            NavigationBar {
+                            NavigationBar(
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                tonalElevation = 0.dp,
+                            ) {
                                 bottomNavigationScreens.forEach { screen ->
                                     NavigationBarItem(
                                         icon = {
