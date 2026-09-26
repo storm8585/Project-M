@@ -50,6 +50,8 @@ import io.nekohasekai.sfa.constant.Status
 import io.nekohasekai.sfa.utils.RemoteControlManager
 import kotlinx.coroutines.launch
 
+data class CardRenderItem(val cards: List<CardGroup>, val isRow: Boolean)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -133,8 +135,9 @@ fun DashboardScreen(
             sheetState = sheetState,
             visibleCards = uiState.visibleCards,
             cardOrder = uiState.cardOrder,
-            onCardToggle = viewModel::toggleCardVisibility,
-            onCardsReorder = viewModel::reorderCards,
+            onToggleCard = viewModel::toggleCardVisibility,
+            onReorderCards = viewModel::reorderCards,
+            onResetOrder = viewModel::resetCardOrder,
             onDismiss = {
                 scope.launch {
                     sheetState.hide()
@@ -173,7 +176,6 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = bottomPadding),
         ) {
-            // Modern Flat Hero VPN Connect Card
             item {
                 VpnHeroCard(
                     status = serviceStatus,
@@ -221,7 +223,7 @@ fun DashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                     ) {
-                        renderItem.cards.forEach { cardGroup ->
+                        for (cardGroup in renderItem.cards) {
                             DashboardCardRenderer(
                                 cardGroup = cardGroup,
                                 uiState = uiState,
@@ -257,7 +259,7 @@ fun DashboardScreen(
                     }
                 } else {
                     // Render single card (full-width or single half-width)
-                    renderItem.cards.forEach { cardGroup ->
+                    for (cardGroup in renderItem.cards) {
                         DashboardCardRenderer(
                             cardGroup = cardGroup,
                             uiState = uiState,

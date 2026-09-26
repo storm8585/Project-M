@@ -18,6 +18,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -1207,12 +1208,12 @@ class MainActivity :
                             }
                         }
                     } else {
-                        // Start FAB (shown when service is stopped and a profile is selected)
                         androidx.compose.animation.AnimatedVisibility(
                             visible = !isRemote &&
                                 currentServiceStatus == Status.Stopped &&
                                 dashboardUiState.selectedProfileId != -1L &&
-                                !isSubScreen,
+                                !isSubScreen &&
+                                currentRoute != Screen.Dashboard.route,
                             enter = scaleIn(),
                             exit = scaleOut(),
                             modifier = Modifier

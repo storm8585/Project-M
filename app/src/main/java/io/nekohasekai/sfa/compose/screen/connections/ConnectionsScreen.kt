@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,7 +80,7 @@ fun ConnectionsPage(
     onConnectionClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showStateMenu by remember { mutableStateOf(false) }
     var showSortMenu by remember { mutableStateOf(false) }
     var showConnectionsMenu by remember { mutableStateOf(false) }
@@ -380,7 +381,7 @@ fun ConnectionsScreen(
     asSheet: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.setVisible(true)
@@ -397,78 +398,80 @@ fun ConnectionsScreen(
     }
 
     val lazyListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val scaffoldPadding = if (asSheet) PaddingValues(0.dp) else LocalScaffoldPadding.current
+    val bottomPadding = if (asSheet) 16.dp else scaffoldPadding.calculateBottomPadding() + 16.dp
 
-    if (asSheet) {
-        val sheetSwipeToDismissModifier =
-            rememberSheetDismissFromContentOnlyIfGestureStartedAtTopModifier {
-                lazyListState.firstVisibleItemIndex == 0 &&
-                    lazyListState.firstVisibleItemScrollOffset == 0
-            }
-        LazyColumnCompat(
-            modifier =
-            modifier
-                .fillMaxSize()
-                .then(sheetSwipeToDismissModifier),
-            state = lazyListState,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            overscrollEffect = null,
+    val sheetSwipeToDismissModifier = if (asSheet) {
+        rememberSheetDismissFromContentOnlyIfGestureStartedAtTopModifier {
+            lazyListState.firstVisibleItemIndex == 0 &&
+                lazyListState.firstVisibleItemScrollOffset == 0
+        }
+    } else {
+        val bounceBlockingConnection = rememberBounceBlockingNestedScrollConnection(lazyListState)
+        Modifier.nestedScroll(bounceBlockingConnection)
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        AnimatedVisibility(
+            visible = uiState.isSearchActive,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut(),
         ) {
-            if (listHeaderContent != null) {
-                item(key = "connections_list_header") {
-                    listHeaderContent()
-                }
+            val focusRequester = remember { FocusRequester() }
+
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
             }
 
-            item(key = "connections_search") {
-                AnimatedVisibility(
-                    visible = uiState.isSearchActive,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
-                    val focusRequester = remember { FocusRequester() }
-
-                    LaunchedEffect(Unit) {
-                        focusRequester.requestFocus()
-                    }
-
-                    OutlinedTextField(
-                        value = uiState.searchText,
-                        onValueChange = { viewModel.setSearchText(it) },
-                        modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                            .focusRequester(focusRequester),
-                        placeholder = { Text(stringResource(R.string.search_connections)) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (uiState.searchText.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.setSearchText("") }) {
-                                    Icon(Icons.Default.Clear, contentDescription = null)
-                                }
-                            }
-                        },
-                        singleLine = true,
-                    )
-                }
-            }
-
-            when {
-                uiState.isLoading -> {
-                    item(key = "connections_loading") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 48.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
+            OutlinedTextField(
+                value = uiState.searchText,
+                onValueChange = { viewModel.setSearchText(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp)
+                    .focusRequester(focusRequester),
+                placeholder = { Text(stringResource(R.string.search_connections)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (uiState.searchText.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.setSearchText("") }) {
+                            Icon(Icons.Default.Clear, contentDescription = null)
                         }
                     }
-                }
+                },
+                singleLine = true,
+            )
+        }
 
-                else -> {
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+
+            else -> {
+                LazyColumnCompat(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(sheetSwipeToDismissModifier),
+                    state = lazyListState,
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = bottomPadding),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    overscrollEffect = if (asSheet) null else rememberOverscrollEffectCompat(),
+                ) {
+                    if (listHeaderContent != null) {
+                        item(key = "connections_list_header") {
+                            listHeaderContent()
+                        }
+                    }
+
                     items(
                         items = uiState.connections,
                         key = { it.id },
@@ -478,78 +481,6 @@ fun ConnectionsScreen(
                             onClick = { onConnectionClick(connection) },
                             onClose = { viewModel.closeConnection(connection.id) },
                         )
-                    }
-                }
-            }
-        }
-    } else {
-        Column(modifier = modifier.fillMaxSize()) {
-            AnimatedVisibility(
-                visible = uiState.isSearchActive,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
-            ) {
-                val focusRequester = remember { FocusRequester() }
-
-                LaunchedEffect(Unit) {
-                    focusRequester.requestFocus()
-                }
-
-                OutlinedTextField(
-                    value = uiState.searchText,
-                    onValueChange = { viewModel.setSearchText(it) },
-                    modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp)
-                        .focusRequester(focusRequester),
-                    placeholder = { Text(stringResource(R.string.search_connections)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (uiState.searchText.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.setSearchText("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                    singleLine = true,
-                )
-            }
-
-            when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                }
-
-                else -> {
-                    val scaffoldPadding = if (asSheet) PaddingValues(0.dp) else LocalScaffoldPadding.current
-                    val bounceBlockingConnection = rememberBounceBlockingNestedScrollConnection(lazyListState)
-                    LazyColumnCompat(
-                        modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .nestedScroll(bounceBlockingConnection),
-                        state = lazyListState,
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = scaffoldPadding.calculateBottomPadding() + 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        overscrollEffect = rememberOverscrollEffectCompat(),
-                    ) {
-                        items(
-                            items = uiState.connections,
-                            key = { it.id },
-                        ) { connection ->
-                            ConnectionItem(
-                                connection = connection,
-                                onClick = { onConnectionClick(connection) },
-                                onClose = { viewModel.closeConnection(connection.id) },
-                            )
-                        }
                     }
                 }
             }

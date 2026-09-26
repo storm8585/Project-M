@@ -39,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -106,15 +107,15 @@ fun ToolsScreen(
         )
     }
 
-    val crashUnreadCount by CrashReportManager.unreadCount.collectAsState()
-    val oomUnreadCount by OOMReportManager.unreadCount.collectAsState()
-    val powerUnreadCount by PowerReportManager.unreadCount.collectAsState()
-    val tailscaleState by tailscaleViewModel.uiState.collectAsState()
-    val taildropSendSessions by TaildropSendManager.sessions.collectAsState()
-    val usbIPState by usbIPViewModel.uiState.collectAsState()
-    val openConnectState by openConnectViewModel.uiState.collectAsState()
-    val openVPNState by openVPNViewModel.uiState.collectAsState()
-    val remoteServer by RemoteControlManager.remoteServer.collectAsState()
+    val crashUnreadCount by CrashReportManager.unreadCount.collectAsStateWithLifecycle()
+    val oomUnreadCount by OOMReportManager.unreadCount.collectAsStateWithLifecycle()
+    val powerUnreadCount by PowerReportManager.unreadCount.collectAsStateWithLifecycle()
+    val tailscaleState by tailscaleViewModel.uiState.collectAsStateWithLifecycle()
+    val taildropSendSessions by TaildropSendManager.sessions.collectAsStateWithLifecycle()
+    val usbIPState by usbIPViewModel.uiState.collectAsStateWithLifecycle()
+    val openConnectState by openConnectViewModel.uiState.collectAsStateWithLifecycle()
+    val openVPNState by openVPNViewModel.uiState.collectAsStateWithLifecycle()
+    val remoteServer by RemoteControlManager.remoteServer.collectAsStateWithLifecycle()
 
     val scaffoldPadding = LocalScaffoldPadding.current
 

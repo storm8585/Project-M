@@ -40,9 +40,6 @@ import io.nekohasekai.sfa.R
 import io.nekohasekai.sfa.compose.component.UptimeText
 import io.nekohasekai.sfa.compose.theme.ModexBlue
 import io.nekohasekai.sfa.compose.theme.ModexBlueLight
-import io.nekohasekai.sfa.compose.theme.ModexTextMuted
-import io.nekohasekai.sfa.compose.theme.ModexTextPrimary
-import io.nekohasekai.sfa.compose.theme.ModexTextSecondary
 import io.nekohasekai.sfa.compose.theme.ServiceRunning
 import io.nekohasekai.sfa.constant.Status
 
@@ -64,7 +61,7 @@ fun VpnHeroCard(
         targetValue = when {
             isRunning -> ServiceRunning
             isStarting -> ModexBlueLight
-            else -> ModexBlue
+            else -> MaterialTheme.colorScheme.primary
         },
         label = "heroBorderColor",
     )
@@ -72,8 +69,8 @@ fun VpnHeroCard(
     val iconColor by animateColorAsState(
         targetValue = when {
             isRunning -> ServiceRunning
-            isStarting -> ModexBlueLight
-            else -> ModexBlueLight
+            isStarting -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.primary
         },
         label = "heroIconColor",
     )
@@ -93,7 +90,6 @@ fun VpnHeroCard(
                 .padding(vertical = 24.dp, horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Server / Profile Selector Pill
             Surface(
                 onClick = onSelectProfile,
                 shape = RoundedCornerShape(12.dp),
@@ -113,14 +109,14 @@ fun VpnHeroCard(
                         imageVector = Icons.AutoMirrored.Default.InsertDriveFile,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = if (hasProfile) ModexBlueLight else ModexTextMuted,
+                        tint = if (hasProfile) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = selectedProfileName ?: stringResource(R.string.not_selected),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
-                        color = if (hasProfile) ModexTextPrimary else ModexTextSecondary,
+                        color = if (hasProfile) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
@@ -129,14 +125,13 @@ fun VpnHeroCard(
                         imageVector = Icons.Default.UnfoldMore,
                         contentDescription = stringResource(R.string.expand),
                         modifier = Modifier.size(18.dp),
-                        tint = ModexTextSecondary,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Main Hero Connect Button (132dp Flat Circle)
             Surface(
                 onClick = onToggle,
                 shape = CircleShape,
@@ -168,7 +163,6 @@ fun VpnHeroCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Status Headline & Uptime
             Text(
                 text = when {
                     isRunning -> stringResource(R.string.status_started)
@@ -180,8 +174,8 @@ fun VpnHeroCard(
                 fontWeight = FontWeight.Bold,
                 color = when {
                     isRunning -> ServiceRunning
-                    isStarting -> ModexBlueLight
-                    else -> ModexTextSecondary
+                    isStarting -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
             )
 
@@ -210,9 +204,9 @@ fun VpnHeroCard(
                 }
             } else {
                 Text(
-                    text = if (hasProfile) "Tap to connect" else "Select a configuration above",
+                    text = if (hasProfile) stringResource(R.string.action_start) else stringResource(R.string.not_selected),
                     style = MaterialTheme.typography.bodySmall,
-                    color = ModexTextMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     letterSpacing = 0.5.sp,
                 )
             }

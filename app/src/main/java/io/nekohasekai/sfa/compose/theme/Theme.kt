@@ -1,7 +1,6 @@
 package io.nekohasekai.sfa.compose.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -11,7 +10,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// UI/UX Pro Max - Flat Design Mobile & Dark Charcoal Theme
 private val ModexCharcoalDarkScheme =
     darkColorScheme(
         primary = ModexBlueLight,
@@ -74,7 +72,6 @@ private val ModexFlatLightScheme =
 @Composable
 fun Theme(
     darkTheme: Boolean = true,
-    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) ModexCharcoalDarkScheme else ModexFlatLightScheme
