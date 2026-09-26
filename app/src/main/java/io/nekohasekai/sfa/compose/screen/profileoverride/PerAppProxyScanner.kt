@@ -5,12 +5,12 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import io.nekohasekai.sfa.Application
-import io.nekohasekai.sfa.utils.PackageQueryManager
+import io.nekohasekai.sfa.vendor.PackageQueryManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import org.jf.dexlib2.dexbacked.DexBackedDexFile
+import com.android.tools.smali.dexlib2.dexbacked.DexBackedDexFile
 import java.io.File
 import java.util.zip.ZipFile
 
