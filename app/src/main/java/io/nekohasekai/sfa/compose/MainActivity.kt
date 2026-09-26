@@ -898,7 +898,7 @@ class MainActivity :
                 null
             }
 
-        val statusTargetActive = remoteServer != null || currentServiceStatus == Status.Started
+        val statusTargetActive = isToolsRoute && (remoteServer != null || currentServiceStatus == Status.Started)
         val subscribeStatus = {
             tailscaleStatusViewModel.subscribe()
             usbIPStatusViewModel?.subscribe()
@@ -1078,7 +1078,7 @@ class MainActivity :
                             )
                         } else {
                             ServiceStatusBar(
-                                visible = showStatusBar && !isSubScreen,
+                                visible = showStatusBar && !isSubScreen && currentRoute != Screen.Dashboard.route,
                                 serviceStatus = currentServiceStatus,
                                 startTime = dashboardUiState.serviceStartTime,
                                 groupsCount = dashboardUiState.groupsCount,
@@ -1318,7 +1318,7 @@ class MainActivity :
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     topBar = topBarContent,
                     bottomBar = {
-                        if (!isSubScreen) {
+                        if (!isSubScreen && currentRoute != Screen.Dashboard.route) {
                             val hasUpdate by UpdateState.hasUpdate
                             NavigationBar(
                                 containerColor = MaterialTheme.colorScheme.surface,
