@@ -6,6 +6,15 @@ Experimental Android client for sing-box, the universal proxy platform.
 
 https://sing-box.sagernet.org/installation/clients/sfa/
 
+## Android CI
+
+Every branch push and pull request builds the modern and legacy Android variants,
+with generated app versions, native-library caching, lint checks and downloadable
+APK artifacts. Release signing is optional and restricted to the default branch.
+
+See [CI setup and versioning (Türkçe)](docs/CI.md) for signing secrets, versioning
+rules, download instructions and the project/UI analysis.
+
 ## License
 
 ```

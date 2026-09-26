@@ -1,0 +1,207 @@
+name: Android CI
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  NDK_VERSION: '28.0.13004108'
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+jobs:
+  prepare:
+    name: Validate and version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      version_name: ${{ steps.version.outputs.version_name }}
+      version_code: ${{ steps.version.outputs.version_code }}
+      core_ref: ${{ steps.version.outputs.core_ref }}
+      go_version: ${{ steps.version.outputs.go_version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Validate Gradle wrapper before building
+        uses: gradle/actions/wrapper-validation@0723195856401067f7a2779048b490ace7a47d7c # v5
+      - name: Test CI helpers
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Generate build version
+        id: version
+        run: python3 .github/scripts/version.py
+      - name: Build summary
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          CORE_REF: ${{ steps.version.outputs.core_ref }}
+        run: |
+          {
+            echo '## Android build'
+            printf '\n- Version: `%s`\n- Version code: `%s`\n' "$VERSION_NAME" "$VERSION_CODE"
+            printf -- '- App commit: `%s`\n- Core commit: `%s`\n' "$GITHUB_SHA" "$CORE_REF"
+            echo '- Version changes are workspace-only; no bot commits or automatic releases.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  native:
+    name: Build libbox (API 24 + API 21)
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GOMAXPROCS: '2'
+      GOFLAGS: '-p=2'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Restore native libraries
+        id: aar
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: app/libs/libbox*.aar
+          key: libbox-v1-${{ runner.os }}-${{ runner.arch }}-${{ needs.prepare.outputs.core_ref }}-go${{ needs.prepare.outputs.go_version }}-ndk${{ env.NDK_VERSION }}-${{ hashFiles('.github/workflows/android.yml', '.github/scripts/check_native.py') }}
+      - name: Check out pinned core
+        if: steps.aar.outputs.cache-hit != 'true'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: SagerNet/sing-box
+          ref: ${{ needs.prepare.outputs.core_ref }}
+          path: core
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Java 17 for gomobile
+        if: steps.aar.outputs.cache-hit != 'true'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Go
+        if: steps.aar.outputs.cache-hit != 'true'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ needs.prepare.outputs.go_version }}
+          cache-dependency-path: core/go.sum
+      - name: Set up Android SDK
+        if: steps.aar.outputs.cache-hit != 'true'
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - name: Install native toolchain
+        if: steps.aar.outputs.cache-hit != 'true'
+        run: sdkmanager "platforms;android-37.1" "build-tools;36.0.0" "ndk;$NDK_VERSION"
+      - name: Build both native libraries for all four ABIs
+        if: steps.aar.outputs.cache-hit != 'true'
+        working-directory: core
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$NDK_VERSION"
+          make lib_install
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          go run ./cmd/internal/build_libbox -target android
+          mkdir -p ../app/libs
+          cp libbox.aar libbox-legacy.aar ../app/libs/
+      - name: Verify native libraries (including cache hits)
+        run: python3 .github/scripts/check_native.py
+      - name: Share native libraries with Android jobs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: libbox-${{ github.run_id }}-${{ github.run_attempt }}
+          path: app/libs/libbox*.aar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  android:
+    name: Android / ${{ matrix.flavor }}
+    needs: [prepare, native]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor: other
+            task: Other
+          - flavor: otherLegacy
+            task: OtherLegacy
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Generate the same build version
+        run: python3 .github/scripts/version.py
+      - name: Set up Java 21 for Gradle
+        # gomobile requires 17; Gradle uses 21 to avoid AGP 9.3.1's JDK 17 lint bug.
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - name: Install application SDKs
+        # The vendored libxposed-api module compiles against API 36.
+        run: sdkmanager "platforms;android-37.1" "platforms;android-36" "build-tools;36.0.0" "ndk;$NDK_VERSION"
+      - name: Set up Gradle and validate wrapper
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
+      - name: Download native libraries
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: libbox-${{ github.run_id }}-${{ github.run_attempt }}
+          path: app/libs
+      - name: Prepare optional release signing (trusted default branch only)
+        id: signing
+        if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: python3 .github/scripts/prepare_signing.py
+      - name: Lint, unit tests and APKs
+        env:
+          VARIANT: ${{ matrix.task }}${{ steps.signing.outputs.build_type || 'Debug' }}
+        run: |
+          bash ./gradlew --no-daemon --stacktrace --console=plain --max-workers=2 \
+            '-Dorg.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8' \
+            ":app:lint$VARIANT" ":app:test${VARIANT}UnitTest" ":app:assemble$VARIANT"
+      - name: Package APKs, checksums and build metadata
+        env:
+          BUILD_TYPE: ${{ steps.signing.outputs.build_type || 'Debug' }}
+          BUILD_FLAVOR: ${{ matrix.flavor }}
+          CORE_REF: ${{ needs.prepare.outputs.core_ref }}
+        run: python3 .github/scripts/package.py
+      - name: Upload APKs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: SFA-${{ needs.prepare.outputs.version_name }}-${{ matrix.flavor }}-${{ steps.signing.outputs.build_type || 'Debug' }}-${{ github.run_attempt }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+      - name: Upload lint, test reports and R8 mapping
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reports-${{ matrix.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            app/build/reports/
+            app/build/test-results/
+            app/build/outputs/mapping/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Remove signing material
+        if: always()
+        run: rm -f app/release.keystore local.properties
