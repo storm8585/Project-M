@@ -2,39 +2,47 @@ package io.nekohasekai.sfa.compose.theme
 
 import androidx.compose.ui.graphics.Color
 
-val CharcoalBackground = Color(0xFF07080B)
-val CharcoalSurface = Color(0xFF0F1117)
-val CharcoalSurfaceVariant = Color(0xFF151821)
-val CharcoalBorder = Color(0xFF1F2432)
+val IosBackground = Color(0xFF000000)
+val IosCard = Color(0xFF14171F)
+val IosCardElevated = Color(0xFF1B202B)
+val IosBorder = Color(0x1FFFFFFF)
+val IosDivider = Color(0x14FFFFFF)
 
-val AccentEmerald = Color(0xFF10B981)
-val AccentEmeraldGlow = Color(0x3310B981)
-val AccentCyan = Color(0xFF38BDF8)
-val AccentSlate = Color(0xFF475569)
+val IosGreen = Color(0xFF30D158)
+val IosGreenMuted = Color(0x2630D158)
+val TelegramBlue = Color(0xFF2AABEE)
+val TelegramBlueMuted = Color(0x262AABEE)
+val IosRed = Color(0xFFFF453A)
+val IosOrange = Color(0xFFFF9F0A)
 
-val ModexBlue = Color(0xFF2563EB)
-val ModexBlueLight = Color(0xFF3B82F6)
-val ModexBlueDark = Color(0xFF1D4ED8)
-val ModexBlueContainer = Color(0xFF141926)
+val IosTextPrimary = Color(0xFFFFFFFF)
+val IosTextSecondary = Color(0xFF8E8E93)
+val IosTextTertiary = Color(0xFF545458)
 
-val ModexTextPrimary = Color(0xFFFFFFFF)
-val ModexTextSecondary = Color(0xFF94A3B8)
-val ModexTextMuted = Color(0xFF64748B)
+val CharcoalBackground = IosBackground
+val CharcoalSurface = IosCard
+val CharcoalSurfaceVariant = IosCardElevated
+val CharcoalBorder = IosBorder
 
-val ServiceRunning = Color(0xFF10B981)
-val ServiceStopped = Color(0xFF64748B)
-val ServiceError = Color(0xFFEF4444)
+val AccentEmerald = IosGreen
+val AccentEmeraldGlow = IosGreenMuted
+val AccentCyan = TelegramBlue
+val AccentSlate = IosTextSecondary
 
-val LogRed = Color(0xFFF87171)
-val LogGreen = Color(0xFF34D399)
-val LogYellow = Color(0xFFFBBF24)
-val LogBlue = Color(0xFF60A5FA)
-val LogPurple = Color(0xFFA78BFA)
-val LogRedLight = Color(0xFFFCA5A5)
-val LogBlueLight = Color(0xFF38BDF8)
-val LogWhite = Color(0xFFF8FAFC)
+val ModexBlue = TelegramBlue
+val ModexBlueLight = Color(0xFF5AC8FA)
+val ModexBlueDark = Color(0xFF0A84FF)
+val ModexBlueContainer = Color(0xFF101928)
 
-val SuccessGreen = Color(0xFF10B981)
-val WarningOrange = Color(0xFFF59E0B)
-val ErrorRed = Color(0xFFEF4444)
-val InfoBlue = Color(0xFF38BDF8)
+val ModexTextPrimary = IosTextPrimary
+val ModexTextSecondary = IosTextSecondary
+val ModexTextMuted = IosTextTertiary
+
+val ServiceRunning = IosGreen
+val ServiceStopped = IosTextSecondary
+val ServiceError = IosRed
+
+val SuccessGreen = IosGreen
+val WarningOrange = IosOrange
+val ErrorRed = IosRed
+val InfoBlue = TelegramBlue

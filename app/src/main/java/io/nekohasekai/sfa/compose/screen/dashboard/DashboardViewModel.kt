@@ -63,11 +63,9 @@ data class DashboardUiState(
     val showProfilePickerSheet: Boolean = false,
     val updatingProfileId: Long? = null,
     val updatedProfileId: Long? = null,
-    // Status
     val memory: String = "",
     val goroutines: String = "",
     val isStatusVisible: Boolean = false,
-    // Traffic
     val trafficVisible: Boolean = false,
     val connectionsIn: String = "0",
     val connectionsOut: String = "0",
@@ -77,15 +75,12 @@ data class DashboardUiState(
     val downlinkTotal: String = "0 B",
     val uplinkHistory: List<Float> = List(30) { 0f },
     val downlinkHistory: List<Float> = List(30) { 0f },
-    // Clash Mode
     val clashModeVisible: Boolean = false,
     val clashModes: List<String> = emptyList(),
     val selectedClashMode: String = "",
-    // System Proxy
     val systemProxyVisible: Boolean = false,
     val systemProxyEnabled: Boolean = false,
     val systemProxySwitching: Boolean = false,
-    // Card visibility settings
     val visibleCards: Set<CardGroup> =
         setOf(
             CardGroup.Profiles,
@@ -110,8 +105,6 @@ data class DashboardUiState(
     data class DeprecatedNote(val message: String, val migrationLink: String?)
 }
 
-// DashboardViewModel now only uses UiEvent for all events
-// No need for DashboardEvent anymore as all events are handled globally
 
 class DashboardViewModel :
     BaseViewModel<DashboardUiState, UiEvent>(),
@@ -134,7 +127,6 @@ class DashboardViewModel :
         val savedOrder = loadItemOrder()
         val disabledItems = loadDisabledItems()
 
-        // Calculate visible items (all items minus disabled)
         val allItems = CardGroup.values().toSet()
         val visibleCards = allItems - disabledItems
 
@@ -206,7 +198,6 @@ class DashboardViewModel :
     private fun checkDeprecatedNotes() {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                // Check if deprecated warnings are disabled
                 if (Settings.disableDeprecatedWarnings) {
                     return@launch
                 }
@@ -240,7 +231,7 @@ class DashboardViewModel :
         when (currentState.serviceStatus) {
             Status.Starting, Status.Started -> stopService()
             Status.Stopped -> sendGlobalEvent(UiEvent.RequestStartService)
-            else -> { /* Ignore while transitioning */ }
+            else -> {  }
         }
     }
 
@@ -248,7 +239,6 @@ class DashboardViewModel :
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 BoxService.stop()
-                // Status will be updated via updateServiceStatus callback
             } catch (e: Exception) {
                 sendError(e)
             }
@@ -277,11 +267,9 @@ class DashboardViewModel :
 
                 Settings.selectedProfile = profileId
 
-                // Check if service is running
                 if (_serviceStatus.value == Status.Started) {
                     val restart = Settings.rebuildServiceMode()
                     if (restart) {
-                        // Need full restart
                         BoxService.stop()
                         sendGlobalEvent(UiEvent.RequestReconnectService)
                         for (i in 0 until 30) {
@@ -292,7 +280,6 @@ class DashboardViewModel :
                         }
                         sendGlobalEvent(UiEvent.RequestStartService)
                     } else {
-                        // Just reload
                         Libbox.newStandaloneCommandClient().serviceReload()
                     }
                 }
@@ -316,7 +303,6 @@ class DashboardViewModel :
     fun deleteProfile(profile: Profile) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Update UI immediately for responsiveness
                 withContext(Dispatchers.Main) {
                     updateState {
                         copy(
@@ -324,10 +310,8 @@ class DashboardViewModel :
                         )
                     }
                 }
-                // Then delete from database
                 ProfileManager.delete(profile)
             } catch (e: Exception) {
-                // Reload profiles if deletion fails
                 loadProfiles()
                 sendError(e)
             }
@@ -335,28 +319,23 @@ class DashboardViewModel :
     }
 
     fun shareProfile(profile: Profile) {
-        // Handled directly in ProfilesCard
     }
 
     fun shareProfileURL(profile: Profile) {
-        // Handled directly in ProfilesCard
     }
 
     fun updateProfile(profile: Profile) {
         if (profile.typed.type != TypedProfile.Type.Remote) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            // Set updating state
             withContext(Dispatchers.Main) {
                 updateState { copy(updatingProfileId = profile.id) }
             }
 
             try {
-                // Fetch remote config
                 val content = HTTPClient().use { it.getString(profile.typed.remoteURL) }
                 Libbox.checkConfig(content)
 
-                // Check if content changed
                 val file = File(profile.typed.path)
                 var contentChanged = false
                 if (!file.exists() || file.readText() != content) {
@@ -364,25 +343,20 @@ class DashboardViewModel :
                     contentChanged = true
                 }
 
-                // Update last updated time
                 profile.typed.lastUpdated = Date()
                 ProfileManager.update(profile)
 
-                // Reload profiles
                 loadProfiles()
 
-                // Show success state
                 withContext(Dispatchers.Main) {
                     updateState { copy(updatingProfileId = null, updatedProfileId = profile.id) }
                 }
 
-                // Clear success state after delay
                 withContext(Dispatchers.Main) {
                     delay(1500)
                     updateState { copy(updatedProfileId = null) }
                 }
 
-                // Restart service if this is the selected profile and content changed
                 if (contentChanged && profile.id == Settings.selectedProfile) {
                     withContext(Dispatchers.Main) {
                         sendGlobalEvent(UiEvent.RequestReconnectService)
@@ -390,7 +364,6 @@ class DashboardViewModel :
                 }
             } catch (e: Exception) {
                 sendErrorMessage("Failed to update profile: ${e.message}")
-                // Clear updating state on error
                 withContext(Dispatchers.Main) {
                     updateState { copy(updatingProfileId = null) }
                 }
@@ -411,10 +384,8 @@ class DashboardViewModel :
             }
         }
 
-        // Update UI immediately
         updateState { copy(profiles = currentProfiles) }
 
-        // Update user order in database
         viewModelScope.launch(Dispatchers.IO) {
             currentProfiles.forEachIndexed { index, profile ->
                 profile.userOrder = index.toLong()
@@ -527,7 +498,6 @@ class DashboardViewModel :
                     }
                 }
             } catch (e: Exception) {
-                // Ignore errors
             }
         }
     }
@@ -560,7 +530,6 @@ class DashboardViewModel :
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 CommandTarget.standaloneClient().setClashMode(mode)
-                // Update UI state directly without reconnecting
                 withContext(Dispatchers.Main) {
                     updateState {
                         copy(selectedClashMode = mode)
@@ -572,12 +541,9 @@ class DashboardViewModel :
         }
     }
 
-    // CommandClient.Handler implementation
     override fun onConnected() {
         viewModelScope.launch(Dispatchers.Main) {
             updateState { copy(isStatusVisible = true) }
-            // Returning from remote control skipped the local reloads that
-            // normally run when the service starts.
             if (RemoteControlManager.remoteServer.value == null && _serviceStatus.value == Status.Started) {
                 reloadSystemProxyStatus()
                 reloadStartedAt()
@@ -600,25 +566,21 @@ class DashboardViewModel :
     override fun updateStatus(status: StatusMessage) {
         viewModelScope.launch(Dispatchers.Main) {
             updateState {
-                // Update history by adding new values and removing old ones
                 val newUplinkHistory = (uplinkHistory.drop(1) + status.uplink.toFloat())
                 val newDownlinkHistory = (downlinkHistory.drop(1) + status.downlink.toFloat())
 
-                // Format the total values
                 val newUplinkTotal = Libbox.formatBytes(status.uplinkTotal)
                 val newDownlinkTotal = Libbox.formatBytes(status.downlinkTotal)
 
                 copy(
                     memory = Libbox.formatBytes(status.memory),
                     goroutines = status.goroutines.toString(),
-                    // Only set trafficVisible to true, never back to false from status updates
                     trafficVisible = if (status.trafficAvailable) true else trafficVisible,
                     connectionsCount = status.connectionsIn,
                     connectionsIn = status.connectionsIn.toString(),
                     connectionsOut = status.connectionsOut.toString(),
                     uplink = "${Libbox.formatBytes(status.uplink)}/s",
                     downlink = "${Libbox.formatBytes(status.downlink)}/s",
-                    // Only update total values if they've actually changed
                     uplinkTotal = if (newUplinkTotal != uplinkTotal) newUplinkTotal else uplinkTotal,
                     downlinkTotal = if (newDownlinkTotal != downlinkTotal) newDownlinkTotal else downlinkTotal,
                     uplinkHistory = newUplinkHistory,
@@ -664,7 +626,6 @@ class DashboardViewModel :
     }
 
     fun toggleCardVisibility(cardGroup: CardGroup) {
-        // Profiles card cannot be disabled
         if (cardGroup == CardGroup.Profiles) {
             return
         }
@@ -676,9 +637,7 @@ class DashboardViewModel :
                 } else {
                     visibleCards + cardGroup
                 }
-            // Save disabled items to settings
             saveDisabledItems(newVisibleCards)
-            // Also save the current order if not already saved (indicates user has configured dashboard)
             if (Settings.dashboardItemOrder.isBlank()) {
                 saveItemOrder(cardOrder)
             }
@@ -700,7 +659,6 @@ class DashboardViewModel :
     }
 
     fun resetCardOrder() {
-        // Clear saved settings to restore defaults
         Settings.dashboardItemOrder = ""
         Settings.dashboardDisabledItems = emptySet()
 
@@ -712,7 +670,6 @@ class DashboardViewModel :
         }
     }
 
-    // Helper functions for serialization
     private fun getDefaultItemOrder() = listOf(
         CardGroup.UploadTraffic,
         CardGroup.DownloadTraffic,
@@ -738,7 +695,6 @@ class DashboardViewModel :
                 stringToCardGroup(itemName)?.let { order.add(it) }
             }
 
-            // Add any new items that aren't in the saved order
             val allItems = CardGroup.values().toSet()
             val savedItems = order.toSet()
             val newItems = allItems - savedItems
@@ -760,7 +716,6 @@ class DashboardViewModel :
 
     private fun loadDisabledItems(): Set<CardGroup> {
         val savedDisabled = Settings.dashboardDisabledItems
-        // Filter out Profiles from disabled items (it cannot be disabled)
         return savedDisabled.mapNotNull { stringToCardGroup(it) }
             .filter { it != CardGroup.Profiles }
             .toSet()
@@ -768,7 +723,6 @@ class DashboardViewModel :
 
     private fun saveDisabledItems(visibleCards: Set<CardGroup>) {
         val allItems = CardGroup.values().toSet()
-        // Always ensure Profiles is in visibleCards (cannot be disabled)
         val actualVisibleCards = visibleCards + CardGroup.Profiles
         val disabledItems = allItems - actualVisibleCards
         Settings.dashboardDisabledItems = disabledItems.map { cardGroupToString(it) }.toSet()
