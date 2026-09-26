@@ -95,7 +95,7 @@ fun LocationSelectorSheet(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.profile_empty),
+                        text = stringResource(R.string.no_profiles),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
