@@ -7,10 +7,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
-ABIS = {"armeabi-v7a", "arm64-v8a", "x86", "x86_64", "universal"}
+from abis import load_config
 
 
 def collect(root, env):
+    abis, universal = load_config(root)
+    expected_abis = set(abis) | ({"universal"} if universal else set())
     flavor, build_type = env["BUILD_FLAVOR"], env["BUILD_TYPE"]
     if flavor not in {"other", "otherLegacy"} or build_type not in {"Debug", "Release"}:
         raise ValueError("Unexpected Android variant")
@@ -27,7 +29,7 @@ def collect(root, env):
             raise ValueError("APK metadata does not match the generated version")
         filters = element["filters"]
         abi = filters[0]["value"] if len(filters) == 1 and filters[0]["filterType"] == "ABI" else "universal"
-        if (filters and abi == "universal") or abi not in ABIS or abi in seen:
+        if (filters and abi == "universal") or abi not in expected_abis or abi in seen:
             raise ValueError("Unexpected or duplicate APK filter")
         seen.add(abi)
         name = element["outputFile"]
@@ -37,8 +39,8 @@ def collect(root, env):
         if not apk.is_file() or apk.stat().st_size == 0:
             raise ValueError(f"Missing APK: {name}")
         apks.append((apk, abi))
-    if seen != ABIS:
-        raise ValueError("Expected four ABI-specific APKs and one universal APK")
+    if seen != expected_abis:
+        raise ValueError(f"Expected APK ABIs {sorted(expected_abis)}, got {sorted(seen)}")
 
     verifier = Path(env["ANDROID_HOME"]) / "build-tools/36.0.0/apksigner"
     for apk, _ in apks:
@@ -67,7 +69,7 @@ def collect(root, env):
     with open(env["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
         summary.write(f"\n### {flavor} / {build_type}\n\n"
                       f"{len(apks)} signed APKs verified; download the matching SFA artifact. "
-                      "Use the universal APK if unsure of your device ABI.\n")
+                      f"Included ABIs: {', '.join(sorted(expected_abis))}.\n")
 
 
 if __name__ == "__main__":

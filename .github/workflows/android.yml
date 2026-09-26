@@ -32,6 +32,8 @@ jobs:
       version_code: ${{ steps.version.outputs.version_code }}
       core_ref: ${{ steps.version.outputs.core_ref }}
       go_version: ${{ steps.version.outputs.go_version }}
+      abis: ${{ steps.abis.outputs.abis }}
+      platforms: ${{ steps.abis.outputs.platforms }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -40,6 +42,9 @@ jobs:
         uses: gradle/actions/wrapper-validation@0723195856401067f7a2779048b490ace7a47d7c # v5
       - name: Test CI helpers
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+      - name: Resolve target ABIs
+        id: abis
+        run: python3 .github/scripts/abis.py
       - name: Generate build version
         id: version
         run: python3 .github/scripts/version.py
@@ -48,11 +53,13 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           CORE_REF: ${{ steps.version.outputs.core_ref }}
+          BUILD_ABIS: ${{ steps.abis.outputs.abis }}
         run: |
           {
             echo '## Android build'
             printf '\n- Version: `%s`\n- Version code: `%s`\n' "$VERSION_NAME" "$VERSION_CODE"
             printf -- '- App commit: `%s`\n- Core commit: `%s`\n' "$GITHUB_SHA" "$CORE_REF"
+            printf -- '- ABIs: `%s`\n' "$BUILD_ABIS"
             echo '- Version changes are workspace-only; no bot commits or automatic releases.'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -64,6 +71,7 @@ jobs:
     env:
       GOMAXPROCS: '2'
       GOFLAGS: '-p=2'
+      LIBBOX_PLATFORMS: ${{ needs.prepare.outputs.platforms }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -73,7 +81,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: app/libs/libbox*.aar
-          key: libbox-v1-${{ runner.os }}-${{ runner.arch }}-${{ needs.prepare.outputs.core_ref }}-go${{ needs.prepare.outputs.go_version }}-ndk${{ env.NDK_VERSION }}-${{ hashFiles('.github/workflows/android.yml', '.github/scripts/check_native.py') }}
+          key: libbox-v2-${{ runner.os }}-${{ runner.arch }}-${{ needs.prepare.outputs.core_ref }}-go${{ needs.prepare.outputs.go_version }}-ndk${{ env.NDK_VERSION }}-${{ needs.prepare.outputs.abis }}-${{ hashFiles('.github/workflows/android.yml', '.github/scripts/check_native.py', '.github/scripts/abis.py') }}
       - name: Check out pinned core
         if: steps.aar.outputs.cache-hit != 'true'
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -97,18 +105,20 @@ jobs:
           cache-dependency-path: core/go.sum
       - name: Set up Android SDK
         if: steps.aar.outputs.cache-hit != 'true'
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools
       - name: Install native toolchain
         if: steps.aar.outputs.cache-hit != 'true'
         run: sdkmanager "platforms;android-37.1" "build-tools;36.0.0" "ndk;$NDK_VERSION"
-      - name: Build both native libraries for all four ABIs
+      - name: Build both native libraries for selected ABIs
         if: steps.aar.outputs.cache-hit != 'true'
         working-directory: core
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$NDK_VERSION"
           make lib_install
           export PATH="$(go env GOPATH)/bin:$PATH"
-          go run ./cmd/internal/build_libbox -target android
+          go run ./cmd/internal/build_libbox -target android -platform "$LIBBOX_PLATFORMS"
           mkdir -p ../app/libs
           cp libbox.aar libbox-legacy.aar ../app/libs/
       - name: Verify native libraries (including cache hits)
@@ -148,7 +158,9 @@ jobs:
           distribution: temurin
           java-version: '21'
       - name: Set up Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        with:
+          packages: platform-tools
       - name: Install application SDKs
         # The vendored libxposed-api module compiles against API 36.
         run: sdkmanager "platforms;android-37.1" "platforms;android-36" "build-tools;36.0.0" "ndk;$NDK_VERSION"

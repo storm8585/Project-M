@@ -57,6 +57,13 @@ fun getVersionProps(propName: String): String {
     return ""
 }
 
+val buildAbis = providers.gradleProperty("buildAbis").get().split(",").map { it.trim() }
+val supportedAbis = setOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+require(buildAbis.isNotEmpty() && buildAbis.all { it in supportedAbis } && buildAbis.distinct().size == buildAbis.size) {
+    "buildAbis must contain unique supported Android ABIs"
+}
+val buildUniversalApk = providers.gradleProperty("buildUniversalApk").get().toBooleanStrict()
+
 android {
     namespace = "io.nekohasekai.sfa"
     compileSdk = 37
@@ -134,9 +141,9 @@ android {
     splits {
         abi {
             isEnable = true
-            isUniversalApk = true
+            isUniversalApk = buildUniversalApk
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include(*buildAbis.toTypedArray())
         }
     }
 

@@ -27,8 +27,9 @@ Akış: [`.github/workflows/android.yml`](../.github/workflows/android.yml).
 - `LIBBOX_REF` ile sabitlenen upstream çekirdek, `GO_VERSION`, Java 17 ve NDK
   `28.0.13004108` kullanılarak derlenir. Tek üretim adımı hem `libbox.aar` hem
   `libbox-legacy.aar` oluşturur. Makefile'ın sabitlediği gomobile sürümü kullanılır.
-- Native cache anahtarı core SHA, Go, NDK ve CI tarifini içerir. Cache hit olsa bile
-  AAR ZIP bütünlüğü, minSdk ve dört ABI'nin native kütüphaneleri doğrulanır.
+- Native cache anahtarı core SHA, Go, NDK, seçilen ABI'ler ve CI tarifini içerir.
+  Cache hit olsa bile AAR ZIP bütünlüğü, minSdk ve native kütüphanelerin seçilen
+  ABI listesiyle tam eşleşmesi doğrulanır.
 - İki Android varyantı paralel çalışır: lint, unit-test task'ı, APK derlemesi,
   APK sürüm metadata kontrolü ve `apksigner verify`.
 - Android derlemesi Java **21** kullanır; gomobile Java **17** ister. Bu ayrım,
@@ -38,6 +39,32 @@ Akış: [`.github/workflows/android.yml`](../.github/workflows/android.yml).
   Gradle wrapper sürümü değiştirilmez, resmi dağıtım SHA-256 kontrolü eklenmiştir.
 - Native ve Gradle cache'leri, zaman aşımı ve sınırlı Gradle/Go paralelliği kullanılır.
   İlk native derleme sonraki cache'li çalışmalardan belirgin şekilde uzun sürebilir.
+
+## ABI seçimi
+
+Native çekirdek, Gradle APK split'leri ve çıktı doğrulaması aynı
+`gradle.properties` ayarlarını kullanır. Şimdiki yapılandırma:
+
+```properties
+buildAbis=armeabi-v7a
+buildUniversalApk=false
+```
+
+Bu ayarla yalnızca ARMv7 çekirdeği (`android/arm`) derlenir. `other` ve
+`otherLegacy` varyantlarının her biri tek `armeabi-v7a` APK üretir; universal,
+ARM64 ve x86 APK üretilmez. APK, 32 bit ARM uygulama desteği gerektirir;
+yalnızca 64 bit uygulama çalıştıran cihazlara kurulamaz.
+
+İleride tüm mimarileri ve universal APK'yı açmak için aynı iki ayarı değiştirin:
+
+```properties
+buildAbis=armeabi-v7a,arm64-v8a,x86,x86_64
+buildUniversalApk=true
+```
+
+Listenin herhangi bir alt kümesi de kullanılabilir. Geçersiz veya tekrarlanan ABI
+adları derlemeden önce reddedilir. ABI değişince native cache anahtarı da değişir;
+eski ARMv7 AAR yanlışlıkla çoklu ABI derlemesinde kullanılmaz.
 
 ## Sürüm politikası
 
@@ -118,14 +145,14 @@ sertifikayla imzalıysa kendi derlemeniz doğrudan onun üzerine kurulamaz.
 **Actions → Android CI → ilgili çalışma → Artifacts** bölümünden `SFA-...` adlı
 artifact'i indirin. Her varyantın arşivinde:
 
-- `arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64` ve **universal** olmak üzere beş APK;
+- şu an yalnızca bir `armeabi-v7a` APK;
 - `SHA256SUMS`;
 - sürüm, app/core commit'leri, run bağlantısı ve APK hash'leri içeren
   `build-metadata.json` bulunur.
 
-Mimariden emin değilseniz **universal** APK'yı seçin. Android 5/6 için
-`otherLegacy` artifact'ini kullanın. Modern ve legacy APK aynı application ID'yi
-kullanır; aynı anda ayrı uygulamalar olarak kurulmazlar.
+Android 5/6 için `otherLegacy`, Android 7+ için `other` artifact'ini kullanın.
+Her ikisi de şu an 32 bit ARM desteği gerektirir. Modern ve legacy APK aynı
+application ID'yi kullanır; aynı anda ayrı uygulamalar olarak kurulmazlar.
 
 APK'lar 30 gün, lint/test raporları ve release R8 mapping'leri 14 gün, ara native
 AAR artifact'i 1 gün saklanır. Kalıcı dağıtım ve crash çözümlemesi için release APK
@@ -152,9 +179,9 @@ ara AAR süresi dolmuşsa tüm workflow'u yeniden çalıştırın.
   davranış değiştirilmedi. İleride fork güncellemeleri için repository hedefi,
   SemVer/tag politikası, `SFA-version-metadata.json`, API 23 legacy seçimi ve ABI
   asset seçimi birlikte ele alınmalıdır.
-- İlk gerçek APK derlemesi GitHub runner üzerinde doğrulanmalıdır. Bu değişiklik
-  hazırlanırken yerel terminal, Zed sandbox çalıştırıcısı eksik olduğu için
-  çalıştırılamadı; helper testleri ve tam Android derlemesi yerelde yürütülmedi.
+- Tam APK derlemesi GitHub runner üzerinde doğrulanmalıdır. Python yardımcı
+  testleri yerelde çalıştırılabilir; bu testler Android/native derlemesinin veya
+  fiziksel cihaz uyumluluğunun yerine geçmez.
 
 Yardımcı testleri yerelde çalıştırmak için Python **3.11+** yeterlidir:
 
