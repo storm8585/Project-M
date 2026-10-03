@@ -33,11 +33,11 @@ jobs:
       abis: ${{ steps.abis.outputs.abis }}
       platforms: ${{ steps.abis.outputs.platforms }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Validate Gradle wrapper before building
-        uses: gradle/actions/wrapper-validation@0723195856401067f7a2779048b490ace7a47d7c # v5
+        uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Test CI helpers
         run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
       - name: Resolve target ABIs
@@ -71,18 +71,18 @@ jobs:
       GOFLAGS: '-p=2'
       LIBBOX_PLATFORMS: ${{ needs.prepare.outputs.platforms }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Restore native libraries
         id: aar
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: app/libs/libbox*.aar
           key: libbox-v2-${{ runner.os }}-${{ runner.arch }}-${{ needs.prepare.outputs.core_ref }}-go${{ needs.prepare.outputs.go_version }}-ndk${{ env.NDK_VERSION }}-${{ needs.prepare.outputs.abis }}-${{ hashFiles('.github/workflows/android.yml', '.github/scripts/check_native.py', '.github/scripts/abis.py') }}
       - name: Check out pinned core
         if: steps.aar.outputs.cache-hit != 'true'
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: SagerNet/sing-box
           ref: ${{ needs.prepare.outputs.core_ref }}
@@ -91,19 +91,19 @@ jobs:
           persist-credentials: false
       - name: Set up Java 17 for gomobile
         if: steps.aar.outputs.cache-hit != 'true'
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '17'
       - name: Set up Go
         if: steps.aar.outputs.cache-hit != 'true'
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: ${{ needs.prepare.outputs.go_version }}
           cache-dependency-path: core/go.sum
       - name: Set up Android SDK
         if: steps.aar.outputs.cache-hit != 'true'
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
         with:
           packages: platform-tools
       - name: Install native toolchain
@@ -122,7 +122,7 @@ jobs:
       - name: Verify native libraries (including cache hits)
         run: python3 .github/scripts/check_native.py
       - name: Share native libraries with Android jobs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: libbox-${{ github.run_id }}-${{ github.run_attempt }}
           path: app/libs/libbox*.aar
@@ -142,30 +142,30 @@ jobs:
           - flavor: other
             task: Other
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Generate the same build version
         run: python3 .github/scripts/version.py
       - name: Set up Java 21 for Gradle
         # gomobile requires 17; Gradle uses 21 to avoid AGP 9.3.1's JDK 17 lint bug.
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '21'
       - name: Set up Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd
         with:
           packages: platform-tools
       - name: Install application SDKs
         # The vendored libxposed-api module compiles against API 36.
         run: sdkmanager "platforms;android-37.1" "platforms;android-36" "build-tools;36.0.0" "ndk;$NDK_VERSION"
       - name: Set up Gradle and validate wrapper
-        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
       - name: Download native libraries
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: libbox-${{ github.run_id }}-${{ github.run_attempt }}
           path: app/libs
@@ -192,7 +192,7 @@ jobs:
           CORE_REF: ${{ needs.prepare.outputs.core_ref }}
         run: python3 .github/scripts/package.py
       - name: Upload APKs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Modex-${{ needs.prepare.outputs.version_name }}-${{ matrix.flavor }}-${{ steps.signing.outputs.build_type || 'Debug' }}-${{ github.run_attempt }}
           path: dist/
@@ -201,7 +201,7 @@ jobs:
           retention-days: 30
       - name: Upload test reports and R8 mapping
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: reports-${{ matrix.flavor }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
